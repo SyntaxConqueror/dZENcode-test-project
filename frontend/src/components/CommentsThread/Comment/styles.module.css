@@ -1,0 +1,44 @@
+.comment__container {
+    display: flex;
+    flex-direction: column;
+    gap: .5em;
+    padding: .5em;
+}
+.comment__header{
+    display: flex;
+    padding: .5em 0;
+    background: rgba(128, 128, 128, .1);
+}
+
+.comment__header > div {
+    display: flex;
+    justify-content: center;
+    padding: .2em .5em;
+}
+
+.comment__content {
+    text-align: justify;
+}
+
+.comment__functions {
+    display: flex;
+}
+.comment__functions > i {
+    cursor: pointer;
+}
+.comment__functions > i:hover {
+    color: rgb(71, 110, 210);
+    transition: .2s;
+}
+
+.content__file {
+    display: flex;
+}
+
+.popup__image > *  {
+    position: relative;
+}
+
+.popup__image > i {
+    right: 30px;
+}
