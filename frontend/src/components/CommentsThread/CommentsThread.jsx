@@ -1,27 +1,80 @@
 import styles from './styles.module.css';
 import ReactPaginate from "react-paginate";
-import {useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import {Comment} from "./Comment/Comment.jsx";
 
-export const CommentsThread = () => {
+// eslint-disable-next-line react/prop-types
+export const CommentsThread = ({pushReplyCommentId}) => {
 
     const [currentPage, setCurrentPage] = useState(1);
+    const [comments, setComments] = useState([]);
+    const [replyCommentId, setReplyCommentId] = useState();
     const [paginateData, setPaginateData] = useState({
         itemsPerPage: 25,
-        totalItems: 200,
-        totalPages: Math.ceil(200 / 25)
-    })
+        totalItems: 0,
+        totalPages: 0
+    });
+    const commentsContainerRef = useRef();
 
 
-    // Function to handle page change
+    useEffect(() => {
+        pushReplyCommentId(replyCommentId);
+    }, [replyCommentId]);
+
+    const generateCommentsArray = (numComments) => {
+        const comments = [];
+
+        for (let i = 1; i <= numComments; i++) {
+            const comment = {
+                id: i,
+                text: `Комментарий ${i}`,
+                replies: [],
+            };
+
+            comment.replies.push({
+                id: i + 1,
+                text: `Ответ на Комментарий ${i}`,
+                replies: [
+                    {
+                        id: i + 2,
+                        text: `Ответ на ответ на Комментарий ${i}`,
+                        replies: [
+                            {
+                                id: i + 3,
+                                text: `Ответ на ответ на ответ на Комментарий ${i}`,
+                                replies: [],
+                            },
+                        ],
+                    },
+                    {
+                        id: i + 4,
+                        text: `Ещё один ответ на Комментарий ${i}`,
+                        replies: [],
+                    },
+                ],
+            });
+
+            comments.push(comment);
+        }
+
+        return comments;
+    }
+
+    useEffect(() => {
+        setComments(generateCommentsArray(150));
+        paginateData.totalItems = comments.length;
+        paginateData.totalPages = Math.ceil(comments.length / 25);
+    }, [comments.length, paginateData]);
+
+
     const handlePageChange = (selectedPage) => {
         setCurrentPage(selectedPage);
     };
 
-    // Calculate which portion of the data to display on the current page
+
     const startIndex = (currentPage - 1) * paginateData.itemsPerPage;
     const endIndex = startIndex + paginateData.itemsPerPage;
-    const currentData = (Array.from({ length: 200 }, () => Math.random())).slice(startIndex, endIndex);
+    const currentData = comments.slice(startIndex, endIndex);
 
 
     return (
@@ -49,10 +102,10 @@ export const CommentsThread = () => {
                 </div>
 
             </div>
-            <div className={styles.comments__container}>
-                {currentData.map((item) =>
+            <div className={styles.comments__container} ref={commentsContainerRef}>
+                {currentData.map((comment) =>
                     {
-                        return <Comment id={item}/>
+                        return <Comment comment={comment} setReplyCommentId={setReplyCommentId} marginLeft={0} key={comment.id} id={comment.id}/>
                     }
                 )}
             </div>
@@ -63,7 +116,14 @@ export const CommentsThread = () => {
                     pageCount={paginateData.totalPages}
                     pageRangeDisplayed={5}
                     marginPagesDisplayed={2}
-                    onPageChange={(selected) => handlePageChange(selected.selected + 1)}
+                    onPageChange={(selected) => {
+                        // Scroll to the top of the page
+                        if (commentsContainerRef.current) {
+                            commentsContainerRef.current.scrollTop = 0;
+                        }
+
+                        handlePageChange(selected.selected + 1);
+                    }}
                 />
             </div>
         </div>

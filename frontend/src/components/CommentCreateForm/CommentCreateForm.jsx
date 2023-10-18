@@ -1,35 +1,60 @@
 import styles from './styles.module.css';
-
-
-import {ReCAPTCHA} from "react-google-recaptcha";
 import {useEffect, useRef, useState} from "react";
-export const CommentCreateForm = () => {
+import axios from 'axios';
+// eslint-disable-next-line react/prop-types
+export const CommentCreateForm = ({replyId}) => {
 
     const [captcha, setCaptcha] = useState('');
-    const [inputValue, setInputValue] = useState('');
+    const [isCaptchaCorrect, setIsCaptchaCorrect] = useState(null);
     const [fileChosen, setFileChosen] = useState('');
     const [contentInputValue, setContentInputValue] = useState('');
-
-
+    const [errorMessage, setErrorMessage] = useState(null);
     const [comment, setComment] = useState({
         username: null,
         email: null,
         homepageURL: null,
         content: null,
+        parentId: null,
         file: null,
     });
 
     const contentInputRef = useRef(null);
     const fileInputRef = useRef(null);
-
     const allCharacters = [];
 
+    useEffect(()=>{
+        errorMessage && alert(errorMessage);
+        setErrorMessage(null);
+    }, [errorMessage]);
+
+    /* -------------------------
+        Functions for tracking
+        and clearing reply id
+    */
+    useEffect(() => {
+        const updatedComment = {...comment};
+        updatedComment.parentId = replyId;
+        setComment(updatedComment);
+    }, [replyId]);
+    const clearReplyId = () => {
+        replyId = null;
+        const updatedComment = {...comment};
+        updatedComment.parentId = replyId;
+        setComment(updatedComment);
+    }
+
+
+    /* -------------------------
+        Functions for creating
+        and checking captchas
+    */
     for (let i = 0; i <= 127; i++) {
         const character = String.fromCharCode(i);
         if (/[A-Za-z0-9]/.test(character)) {
             allCharacters.push(character);
         }
     }
+
     const getCaptcha = () => {
         let newCaptcha = '';
         for (let i = 0; i < 6; i++) {
@@ -39,27 +64,76 @@ export const CommentCreateForm = () => {
         setCaptcha(newCaptcha);
     };
 
+    const checkCaptcha = (e) => {
+        if(captcha.replace(/\s/g, "") !== e.target.value) {
+            setIsCaptchaCorrect(false);
+        } else setIsCaptchaCorrect(true);
+    }
     useEffect(() => {
         getCaptcha();
     }, []);
 
     const handleReload = () => {
-        setInputValue('');
         getCaptcha();
     };
 
+
+    /* -------------------------
+        Function for making a request
+        Submitting a data of comment
+    */
     const handleSubmit = (e) => {
         e.preventDefault();
+        try {
+            const formData = new FormData(e.target);
+
+            if(isCaptchaCorrect) {
+
+                const commentData = new FormData();
+                commentData.append('username', formData.get('username'));
+                commentData.append('email', formData.get('email'));
+                commentData.append('homepageURL', formData.get('homepageURL'));
+                commentData.append('text_content', formData.get('content'));
+                commentData.append('parentId', comment.parentId ?? null);
+                commentData.append('file', comment.file);
+
+                console.log(comment.file);
+                axios.post('http://127.0.0.1:8000/api/createComment', commentData)
+                .then((response)=>{
+                    console.log(response.data);
+                    // eslint-disable-next-line no-prototype-builtins
+                    response.data.message && setErrorMessage(response.data.message);
+                })
+                .catch((error) => {
+                    console.error(error);
+                });
+            }
+        } catch (err) {
+            console.log(err);
+        }
     };
 
+
+    /* -------------------------
+        Functions for handling file's changes in comment
+    */
     const handleChooseFile = () => {
         fileInputRef.current.click();
     }
-
+    const clearChosenFile = () => {
+        fileInputRef.current.value = null;
+        setFileChosen(null);
+        const updatedComment = {...comment};
+        updatedComment.file = null;
+        setComment(updatedComment);
+    }
     const resizeImage = (img, fileType) => {
 
         const maxWidth = 320;
         const maxHeight = 240;
+
+        const exactFileType = fileType.slice(fileType.lastIndexOf('/') + 1);
+        console.log(exactFileType);
 
         let width = img.width;
         let height = img.height;
@@ -80,10 +154,16 @@ export const CommentCreateForm = () => {
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0, width, height);
 
-        const updatedComment = {...comment};
-        updatedComment.file = canvas.toDataURL(fileType);
-        setComment(updatedComment);
+        canvas.toBlob((blob) => {
+            if (blob) {
 
+                const file = new File([blob], `resized-image.${exactFileType}`, { type: `${fileType}` });
+                const updatedComment = { ...comment };
+                updatedComment.file = file;
+                setComment(updatedComment);
+
+            }
+        }, `${fileType}`);
     }
 
     const handleFileInputChange = (e) => {
@@ -109,28 +189,27 @@ export const CommentCreateForm = () => {
                 reader.readAsDataURL(file);
             } else if (fileType === "text/plain") {
                 if (file.size <= 102400) {
-                    const reader = new FileReader();
-                    reader.onload = function (e) {
-                        const text = e.target.result;
-                    };
 
+                    const updatedComment = {...comment};
+                    updatedComment.file = file;
+                    setComment(updatedComment);
                     setFileChosen(`Selected file: ${file.name}`);
 
-                    reader.readAsText(file);
                 } else {
                     alert("The text file is too large. Maximum size: 100 kb.");
                     e.target.value = "";
                     setFileChosen('');
                 }
-            } else {
-                alert("The file format is not supported.");
-                e.target.value = ""; // Сбросить input
-                setFileChosen('');
             }
         }
 
     }
 
+
+    /* -------------------------
+        Function for inserting
+        tags to users comment text
+    */
     const insertTag = (openingTag, closingTag) => {
         const start = contentInputRef.current.selectionStart;
         const end = contentInputRef.current.selectionEnd;
@@ -145,12 +224,57 @@ export const CommentCreateForm = () => {
         contentInputRef.current.setSelectionRange(start + openingTag.length, end + openingTag.length);
     };
 
+    /* -------------------------
+        Function for handling the content of comment
+        Filtering tags
+    */
+    const handleContentInputChange =(e)=>{
+        const inputValue = e.target.value;
+
+        // Функция для разрешения только определенных HTML-тегов и проверки на закрытие
+        function sanitizeInput(input) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(input, 'text/html');
+
+            function checkClosingTags(node) {
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    const tagName = node.tagName.toLowerCase();
+                    const allowedTags = ['a', 'i', 'strong', 'code'];
+
+                    if (allowedTags.includes(tagName)) {
+                        const newNode = document.createElement(tagName);
+                        node.childNodes.forEach(checkClosingTags);
+                        newNode.innerHTML = node.innerHTML;
+                        node.replaceWith(newNode);
+                    }
+                }
+            }
+
+            doc.body.childNodes.forEach(checkClosingTags);
+            return doc.body.innerHTML;
+        }
+
+        const sanitizedValue = sanitizeInput(inputValue);
+        setContentInputValue(sanitizedValue);
+    }
+
 
     return (
         <div className={styles.container}>
 
             <form className={styles.subcontainer} onSubmit={handleSubmit}>
-                <h2>Comment Form</h2>
+                <div className={styles.form__header}>
+                    <h2>Comment Form</h2>
+                    {comment.parentId &&
+                        <>
+                            <i className="material-icons">reply</i>
+                            <span>reply to user: {replyId}</span>
+                            <i className="material-icons close" onClick={clearReplyId}>close</i>
+                        </>
+                    }
+
+                </div>
+
                 <div className={styles.form__group}>
                     <input type="input" className={styles.form__field} placeholder="User Name" name="username" id='name' required />
                     <label htmlFor="username" className={styles.form__label}>User Name</label>
@@ -160,19 +284,21 @@ export const CommentCreateForm = () => {
                     <label htmlFor="email" className={styles.form__label}>Email</label>
                 </div>
                 <div className={styles.form__group}>
-                    <input type="text" className={styles.form__field} placeholder="Home Page URL" name="homepageURL" id='homepageURL' />
+                    <input type="input" className={styles.form__field} placeholder="Home Page URL" name="homepageURL" id='homepageURL' />
                     <label htmlFor="homepageURL" className={styles.form__label}>Home Page URL</label>
+
                 </div>
                 <div className={styles.form__content__group}>
                     <div className={styles.form__content__fields}>
                         <label htmlFor="content">Content</label>
                         <textarea
+                            required
                             name="content"
                             placeholder="Write here your comment"
                             className={styles.form__content__field}
                             ref={contentInputRef}
                             value={contentInputValue}
-                            onChange={(e) => setContentInputValue(e.target.value)}
+                            onChange={handleContentInputChange}
                         ></textarea>
                     </div>
                     <div className={styles.form__content__buttons}>
@@ -207,6 +333,7 @@ export const CommentCreateForm = () => {
                         name="comment__file" ref={fileInputRef}
                         onChange={handleFileInputChange}/>
                     <span>{fileChosen}</span>
+                    {fileChosen && <i className='material-icons close' onClick={clearChosenFile}>close</i>}
 
                 </div>
 
@@ -226,9 +353,9 @@ export const CommentCreateForm = () => {
                             placeholder="captcha" type="text"
                             maxLength="6" spellCheck="false"
                             required
-                            value={inputValue}
-                            onChange={(e) => setInputValue(e.target.value)}
+                            onChange={(e) => checkCaptcha(e)}
                         />
+                        {isCaptchaCorrect === false && <p style={{ color: 'red' }}>Captcha is not correct.</p>}
                         <label className={styles.form__label} htmlFor="captcha">Captcha</label>
                     </div>
 

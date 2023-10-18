@@ -98,6 +98,10 @@
 .form__file__group > span {
     margin-left: 1em;
 }
+.form__file__group > i {
+    margin-left: .5em;
+    cursor: pointer;
+}
 .form__file__group input[type="file"] {
     position: absolute;
     left: 0;
@@ -226,6 +230,25 @@ input[type="file"] {
     width: 50px !important;
     height: 48px !important;
     margin-left: 10px;
+}
+
+.form__input__error {
+    color: #f54c4c;
+}
+
+.form__header {
+    display: flex;
+    gap: .5em
+}
+
+.form__header > * {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.form__header > i[class='material-icons close']{
+    cursor: pointer;
 }
 
 @media screen and (max-width: 850px) {

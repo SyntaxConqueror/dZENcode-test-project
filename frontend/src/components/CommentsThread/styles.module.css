@@ -67,6 +67,7 @@ body::-webkit-scrollbar-thumb {
     flex-direction: column;
     gap: 1.5em;
     overflow-y: auto;
+    padding: .5em;
 }
 
 .comments__container::-webkit-scrollbar {

@@ -11,3 +11,7 @@
 #root {
     height: 100vh;
 }
+
+body {
+    overflow-x: hidden;
+}
