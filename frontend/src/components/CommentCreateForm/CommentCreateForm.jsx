@@ -1,14 +1,22 @@
 import styles from './styles.module.css';
 import {useEffect, useRef, useState} from "react";
+import { loadCaptchaEnginge, LoadCanvasTemplateNoReload, validateCaptcha } from 'react-simple-captcha';
 import axios from 'axios';
-// eslint-disable-next-line react/prop-types
-export const CommentCreateForm = ({replyId}) => {
+import CommentPreview from "./CommentPreview/CommentPreview.jsx";
+import ErrorModal from "../ErrorModal/ErrorModal.jsx";
+/* eslint-disable react/prop-types */
+export const CommentCreateForm = ({replyId, setReplyId, setComments, userNameReplyTo, setUserNameReplyTo}) => {
 
-    const [captcha, setCaptcha] = useState('');
     const [isCaptchaCorrect, setIsCaptchaCorrect] = useState(null);
+    const [errorMessage, setErrorMessage] = useState(null);
+    const [showErrorModal, setShowErrorModal] = useState(null);
+
     const [fileChosen, setFileChosen] = useState('');
     const [contentInputValue, setContentInputValue] = useState('');
-    const [errorMessage, setErrorMessage] = useState(null);
+
+    const [showReplyElements, setShowReplyElements] = useState(false);
+    const [showPreview, setShowPreview] = useState(false);
+
     const [comment, setComment] = useState({
         username: null,
         email: null,
@@ -17,19 +25,38 @@ export const CommentCreateForm = ({replyId}) => {
         parentId: null,
         file: null,
     });
+    const [previewComment, setPreviewComment] = useState();
 
     const contentInputRef = useRef(null);
     const fileInputRef = useRef(null);
-    const allCharacters = [];
+    const captchaInputRef = useRef(null);
+    const formRef = useRef(null);
+    const reloadCaptchaBtn = document.getElementById('reload_href');
 
+
+    /* -------------------------------------
+
+        useEffects for tracking errors and
+        make loading effect to reply element
+
+    */
     useEffect(()=>{
-        errorMessage && alert(errorMessage);
-        setErrorMessage(null);
+        errorMessage && setShowErrorModal(true);
     }, [errorMessage]);
+    useEffect(() => {
+        if (comment.parentId) {
+            setTimeout(() => {
+                setShowReplyElements(true);
+            }, 150);
+        }
+    }, [comment.parentId]);
+
 
     /* -------------------------
+
         Functions for tracking
         and clearing reply id
+
     */
     useEffect(() => {
         const updatedComment = {...comment};
@@ -37,50 +64,47 @@ export const CommentCreateForm = ({replyId}) => {
         setComment(updatedComment);
     }, [replyId]);
     const clearReplyId = () => {
-        replyId = null;
+        setReplyId(null);
         const updatedComment = {...comment};
         updatedComment.parentId = replyId;
         setComment(updatedComment);
+        setUserNameReplyTo(null);
+        setShowReplyElements(false);
     }
 
 
     /* -------------------------
+
         Functions for creating
-        and checking captchas
+        and checking captcha
+
     */
-    for (let i = 0; i <= 127; i++) {
-        const character = String.fromCharCode(i);
-        if (/[A-Za-z0-9]/.test(character)) {
-            allCharacters.push(character);
-        }
-    }
-
-    const getCaptcha = () => {
-        let newCaptcha = '';
-        for (let i = 0; i < 6; i++) {
-            let randomCharacter = allCharacters[Math.floor(Math.random() * allCharacters.length)];
-            newCaptcha += ` ${randomCharacter}`;
-        }
-        setCaptcha(newCaptcha);
-    };
-
-    const checkCaptcha = (e) => {
-        if(captcha.replace(/\s/g, "") !== e.target.value) {
-            setIsCaptchaCorrect(false);
-        } else setIsCaptchaCorrect(true);
-    }
     useEffect(() => {
-        getCaptcha();
+        loadCaptchaEnginge(6, '#CCCCCC00', 'rgb(168,168,168)');
     }, []);
-
     const handleReload = () => {
-        getCaptcha();
+        if (reloadCaptchaBtn) {
+            reloadCaptchaBtn.display = 'none';
+            reloadCaptchaBtn.click();
+            captchaInputRef.current.value = null;
+        } else {
+            console.error('Element with id "myButton" not found.');
+        }
     };
+    const checkCaptcha = (e) => {
+        if(validateCaptcha(e.target.value, false)===true){
+            setIsCaptchaCorrect(true);
+        } else {
+            setIsCaptchaCorrect(false);
+        }
+    }
 
 
     /* -------------------------
+
         Function for making a request
         Submitting a data of comment
+
     */
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -88,7 +112,6 @@ export const CommentCreateForm = ({replyId}) => {
             const formData = new FormData(e.target);
 
             if(isCaptchaCorrect) {
-
                 const commentData = new FormData();
                 commentData.append('username', formData.get('username'));
                 commentData.append('email', formData.get('email'));
@@ -97,16 +120,18 @@ export const CommentCreateForm = ({replyId}) => {
                 commentData.append('parentId', comment.parentId ?? null);
                 commentData.append('file', comment.file);
 
-                console.log(comment.file);
                 axios.post('http://127.0.0.1:8000/api/createComment', commentData)
-                .then((response)=>{
-                    console.log(response.data);
-                    // eslint-disable-next-line no-prototype-builtins
-                    response.data.message && setErrorMessage(response.data.message);
-                })
-                .catch((error) => {
-                    console.error(error);
-                });
+                    .then((response)=>{
+                        if(response.data.message){
+                            setErrorMessage(response.data.message);
+                            return response(response.data);
+                        }
+                        setComments(response.data);
+                    })
+                    .catch((error) => {
+                        console.error(error);
+                    });
+                handleReload();
             }
         } catch (err) {
             console.log(err);
@@ -115,7 +140,44 @@ export const CommentCreateForm = ({replyId}) => {
 
 
     /* -------------------------
+
+        Function for making a request
+        Creating a preview of comment
+
+    */
+    const handlePreview = () => {
+        const formData = new FormData(formRef.current);
+        const date = Date.now();
+
+        const commentPreviewData = new FormData();
+        commentPreviewData.append('id', '1');
+        commentPreviewData.append('username', formData.get('username'));
+        commentPreviewData.append('email', formData.get('email'));
+        commentPreviewData.append('text_content', formData.get('content'));
+        commentPreviewData.append('file', comment.file && URL.createObjectURL(comment.file));
+        commentPreviewData.append('file_type', comment.file && comment.file.type);
+        commentPreviewData.append('created_at', date.toString());
+
+
+        axios.post('http://127.0.0.1:8000/api/createPreviewComment', commentPreviewData)
+            .then((response)=>{
+                if(response.data.message){
+                    setErrorMessage(response.data.message);
+                    return response.data;
+                }
+                console.log(response.data);
+                setPreviewComment(response.data);
+                setShowPreview(true);
+            })
+            .catch((error)=> {console.log(error)})
+
+    }
+
+
+    /* -------------------------
+
         Functions for handling file's changes in comment
+
     */
     const handleChooseFile = () => {
         fileInputRef.current.click();
@@ -207,8 +269,10 @@ export const CommentCreateForm = ({replyId}) => {
 
 
     /* -------------------------
+
         Function for inserting
         tags to users comment text
+
     */
     const insertTag = (openingTag, closingTag) => {
         const start = contentInputRef.current.selectionStart;
@@ -224,9 +288,12 @@ export const CommentCreateForm = ({replyId}) => {
         contentInputRef.current.setSelectionRange(start + openingTag.length, end + openingTag.length);
     };
 
+
     /* -------------------------
+
         Function for handling the content of comment
-        Filtering tags
+        filtering tags
+
     */
     const handleContentInputChange =(e)=>{
         const inputValue = e.target.value;
@@ -262,21 +329,28 @@ export const CommentCreateForm = ({replyId}) => {
     return (
         <div className={styles.container}>
 
-            <form className={styles.subcontainer} onSubmit={handleSubmit}>
+            <form className={styles.subcontainer} onSubmit={handleSubmit} ref={formRef}>
                 <div className={styles.form__header}>
                     <h2>Comment Form</h2>
-                    {comment.parentId &&
-                        <>
+                    {showReplyElements && comment.parentId &&
+                        <div>
                             <i className="material-icons">reply</i>
-                            <span>reply to user: {replyId}</span>
+                            <span>reply to: {userNameReplyTo}</span>
                             <i className="material-icons close" onClick={clearReplyId}>close</i>
-                        </>
+                        </div>
                     }
-
                 </div>
 
                 <div className={styles.form__group}>
-                    <input type="input" className={styles.form__field} placeholder="User Name" name="username" id='name' required />
+                    <input
+                        type="input"
+                        className={styles.form__field}
+                        placeholder="User Name"
+                        name="username"
+                        id='name'
+                        minLength="3"
+                        maxLength="25"
+                        required />
                     <label htmlFor="username" className={styles.form__label}>User Name</label>
                 </div>
                 <div className={styles.form__group}>
@@ -284,7 +358,7 @@ export const CommentCreateForm = ({replyId}) => {
                     <label htmlFor="email" className={styles.form__label}>Email</label>
                 </div>
                 <div className={styles.form__group}>
-                    <input type="input" className={styles.form__field} placeholder="Home Page URL" name="homepageURL" id='homepageURL' />
+                    <input type="url" className={styles.form__field} placeholder="Home Page URL" name="homepageURL" id='homepageURL' />
                     <label htmlFor="homepageURL" className={styles.form__label}>Home Page URL</label>
 
                 </div>
@@ -298,6 +372,7 @@ export const CommentCreateForm = ({replyId}) => {
                             className={styles.form__content__field}
                             ref={contentInputRef}
                             value={contentInputValue}
+                            maxLength="2000"
                             onChange={handleContentInputChange}
                         ></textarea>
                     </div>
@@ -312,7 +387,7 @@ export const CommentCreateForm = ({replyId}) => {
                         >&lt;a&gt;</span>
                         <span
                             className={styles.tag__btn}
-                            onClick={() => insertTag('<strong>', '<strong>')}
+                            onClick={() => insertTag('<strong>', '</strong>')}
                         >&lt;strong&gt;</span>
                         <span
                             className={styles.tag__btn}
@@ -340,29 +415,46 @@ export const CommentCreateForm = ({replyId}) => {
                 <div className={styles.form__group}>
                     <div className={styles.captcha__area}>
                         <div className={styles.captcha__img}>
-                            <div className={styles.captcha}>{captcha}</div>
+                            <div>
+                                <LoadCanvasTemplateNoReload/>
+                            </div>
                             <button type="button" className={styles.reload__btn} onClick={handleReload}>
                                 <i className="material-icons">refresh</i>
                             </button>
                         </div>
 
                     </div>
+
                     <div className={styles.form__group}>
                         <input
                             className={styles.form__field}
                             placeholder="captcha" type="text"
                             maxLength="6" spellCheck="false"
+                            ref={captchaInputRef}
                             required
                             onChange={(e) => checkCaptcha(e)}
                         />
                         {isCaptchaCorrect === false && <p style={{ color: 'red' }}>Captcha is not correct.</p>}
                         <label className={styles.form__label} htmlFor="captcha">Captcha</label>
+
                     </div>
 
                 </div>
-                <button type="submit" className={styles.submit__btn}>Send comment</button>
-
+                <div className={styles.form__buttons}>
+                    <button type="button" onClick={handlePreview} className={styles.submit__btn}>Preview</button>
+                    <button type="submit" className={styles.submit__btn}>Send comment</button>
+                </div>
             </form>
+            {showPreview && <CommentPreview show={showPreview} setShowPreview={setShowPreview} commentData={previewComment}/>}
+            {
+                showErrorModal
+                &&
+                <ErrorModal
+                    show={showErrorModal}
+                    setShow={setShowErrorModal}
+                    error={errorMessage}
+                    setErrorMessage={setErrorMessage}
+                />}
         </div>
     )
 }

@@ -13,11 +13,12 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
     protected $guarded = false;
     protected $fillable = [
-        'name',
+        'username',
         'email',
+        'homepage_url'
     ];
 
     public function comments() {
-        return $this->belongsToMany(Comment::class);
+        return $this->belongsToMany(Comment::class)->withTimestamps();
     }
 }

@@ -2,66 +2,29 @@ import styles from './styles.module.css';
 import ReactPaginate from "react-paginate";
 import {useEffect, useRef, useState} from "react";
 import {Comment} from "./Comment/Comment.jsx";
+import axios from "axios";
+/* eslint-disable react/prop-types */
 
-// eslint-disable-next-line react/prop-types
-export const CommentsThread = ({pushReplyCommentId}) => {
+export const CommentsThread = ({setReplyId, comments, setComments, setUserNameReplyTo}) => {
 
     const [currentPage, setCurrentPage] = useState(1);
-    const [comments, setComments] = useState([]);
-    const [replyCommentId, setReplyCommentId] = useState();
+    const [showContent, setShowContent] = useState(false);
+
     const [paginateData, setPaginateData] = useState({
         itemsPerPage: 25,
         totalItems: 0,
         totalPages: 0
     });
+
     const commentsContainerRef = useRef();
 
+    useEffect(() => {
+        setTimeout(() => {
+            setShowContent(true);
+        }, 500);
+    }, [showContent]);
 
     useEffect(() => {
-        pushReplyCommentId(replyCommentId);
-    }, [replyCommentId]);
-
-    const generateCommentsArray = (numComments) => {
-        const comments = [];
-
-        for (let i = 1; i <= numComments; i++) {
-            const comment = {
-                id: i,
-                text: `Комментарий ${i}`,
-                replies: [],
-            };
-
-            comment.replies.push({
-                id: i + 1,
-                text: `Ответ на Комментарий ${i}`,
-                replies: [
-                    {
-                        id: i + 2,
-                        text: `Ответ на ответ на Комментарий ${i}`,
-                        replies: [
-                            {
-                                id: i + 3,
-                                text: `Ответ на ответ на ответ на Комментарий ${i}`,
-                                replies: [],
-                            },
-                        ],
-                    },
-                    {
-                        id: i + 4,
-                        text: `Ещё один ответ на Комментарий ${i}`,
-                        replies: [],
-                    },
-                ],
-            });
-
-            comments.push(comment);
-        }
-
-        return comments;
-    }
-
-    useEffect(() => {
-        setComments(generateCommentsArray(150));
         paginateData.totalItems = comments.length;
         paginateData.totalPages = Math.ceil(comments.length / 25);
     }, [comments.length, paginateData]);
@@ -71,6 +34,22 @@ export const CommentsThread = ({pushReplyCommentId}) => {
         setCurrentPage(selectedPage);
     };
 
+    const handleOptionSelect = (option) => {
+        const sortEndpoints = {
+            'ascending': 'http://127.0.0.1:8000/api/dateAscendingSort',
+            'descending': 'http://127.0.0.1:8000/api/dateDescendingSort',
+            'username': 'http://127.0.0.1:8000/api/usernameSort',
+            'email': 'http://127.0.0.1:8000/api/emailSort',
+        }
+
+        axios.get(sortEndpoints[option])
+            .then((response)=> {
+                setShowContent(false);
+                setComments(response.data);
+            })
+            .catch((error)=>{console.log(error)})
+    };
+
 
     const startIndex = (currentPage - 1) * paginateData.itemsPerPage;
     const endIndex = startIndex + paginateData.itemsPerPage;
@@ -78,26 +57,72 @@ export const CommentsThread = ({pushReplyCommentId}) => {
 
 
     return (
+        showContent
+        ?
         <div className={styles.container}>
             <div className={styles.comments__sort}>
 
                 <div className="dropdown">
-                    <a className="btn btn-secondary dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                    <a
+                        className="btn btn-secondary dropdown-toggle"
+                        href="#"
+                        role="button"
+                        data-bs-toggle="dropdown"
+                        data-bs-auto-close="outside"
+                        aria-expanded="false"
+                    >
                         Sort by
                     </a>
                     <ul className="dropdown-menu">
-
                         <li className="dropstart">
-                            <a className="dropdown-item dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <a
+                                className="dropdown-item dropdown-toggle"
+                                href="#"
+                                role="button"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false"
+                            >
                                 Publication date
                             </a>
                             <ul className="dropdown-menu">
-                                <li><a className="dropdown-item" href="#">Descending</a></li>
-                                <li><a className="dropdown-item" href="#">Ascending</a></li>
+                                <li>
+                                    <a
+                                        className="dropdown-item"
+                                        href="#"
+                                        onClick={() => handleOptionSelect('descending')}
+                                    >
+                                        Descending
+                                    </a>
+                                </li>
+                                <li>
+                                    <a
+                                        className="dropdown-item"
+                                        href="#"
+                                        onClick={() => handleOptionSelect('ascending')}
+                                    >
+                                        Ascending
+                                    </a>
+                                </li>
                             </ul>
                         </li>
-                        <li><a className="dropdown-item" href="#">User Name</a></li>
-                        <li><a className="dropdown-item" href="#">Email</a></li>
+                        <li>
+                            <a
+                                className="dropdown-item"
+                                href="#"
+                                onClick={() => handleOptionSelect('username')}
+                            >
+                                User Name
+                            </a>
+                        </li>
+                        <li>
+                            <a
+                                className="dropdown-item"
+                                href="#"
+                                onClick={() => handleOptionSelect('email')}
+                            >
+                                Email
+                            </a>
+                        </li>
                     </ul>
                 </div>
 
@@ -105,7 +130,13 @@ export const CommentsThread = ({pushReplyCommentId}) => {
             <div className={styles.comments__container} ref={commentsContainerRef}>
                 {currentData.map((comment) =>
                     {
-                        return <Comment comment={comment} setReplyCommentId={setReplyCommentId} marginLeft={0} key={comment.id} id={comment.id}/>
+                        return <Comment
+                            comment={comment}
+                            setReplyId={setReplyId}
+                            setUserNameReplyTo={setUserNameReplyTo}
+                            marginLeft={0}
+                            key={comment.id}
+                            id={comment.id}/>
                     }
                 )}
             </div>
@@ -126,6 +157,11 @@ export const CommentsThread = ({pushReplyCommentId}) => {
                     }}
                 />
             </div>
+        </div>
+        :
+        <div className={styles.loading__gif}>
+            <span>Loading</span>
+            <img src="/images/lightbox/images/loading.gif" width={20} height={20} alt="Loading..." />
         </div>
     )
 }

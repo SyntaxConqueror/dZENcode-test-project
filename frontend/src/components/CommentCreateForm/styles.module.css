@@ -207,7 +207,13 @@ input[type="file"] {
 .captcha__img {
     display: flex;
     flex-direction: row;
+
 }
+
+#canv {
+    background: url('/public/images/captcha-bg.png');
+}
+
 .captcha {
     user-select: none;
     display: flex;
@@ -238,23 +244,48 @@ input[type="file"] {
 
 .form__header {
     display: flex;
+    flex-direction: column;
     gap: .5em
 }
 
 .form__header > * {
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 1em;
 }
 
-.form__header > i[class='material-icons close']{
+.form__header > div > i[class='material-icons close']{
     cursor: pointer;
+}
+
+.form__buttons {
+    display: flex;
+    gap: 2em;
+}
+.form__buttons > * {
+    width: 100%;
+
+}
+
+.captcha__img > div {
+    display: flex;
+    align-items: center;
+    background: url('/public/images/captcha-bg.png');
+}
+
+.captcha__img > div > div {
+    display: flex;
+    align-items: center;
 }
 
 @media screen and (max-width: 850px) {
     .container{
         padding: 1em;
         width: 100%;
+    }
+    .form__buttons {
+        flex-direction: column;
+        gap: 1em;
     }
 }
 

@@ -30,6 +30,16 @@ body::-webkit-scrollbar-thumb {
     justify-content: center;
 }
 
+.loading__gif {
+    height: 100%;
+    width: 100%;
+    padding: 2em;
+    display: flex;
+    gap: 1em;
+    justify-content: center;
+    align-items: center;
+}
+
 .react__paginate {
     list-style: none;
     display: flex;
@@ -65,7 +75,7 @@ body::-webkit-scrollbar-thumb {
 .comments__container {
     display: flex;
     flex-direction: column;
-    gap: 1.5em;
+    gap: 4em;
     overflow-y: auto;
     padding: .5em;
 }

@@ -3,7 +3,7 @@ import Modal from 'react-bootstrap/Modal';
 import styles from './styles.module.css';
 import { CSSTransition } from 'react-transition-group';
 
-// eslint-disable-next-line react/prop-types
+/* eslint-disable react/prop-types */
 const TextFileModal = ({link}) => {
     const [show, setShow] = useState(false);
     const [textFileContent, setTextFileContent] = useState('');

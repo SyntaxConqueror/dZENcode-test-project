@@ -18,6 +18,7 @@
 
 .comment__content {
     text-align: justify;
+    padding-left: 1em;
 }
 
 .comment__functions {
@@ -46,4 +47,9 @@
 
 .comment__text {
     margin-top: .5em;
+
+}
+
+.replies {
+    margin-top: 0.5em;
 }

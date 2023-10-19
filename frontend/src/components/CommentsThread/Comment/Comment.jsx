@@ -1,10 +1,19 @@
 import styles from './styles.module.css';
 import TextFileModal from "./TextFileModal/TextFileModal.jsx";
-// eslint-disable-next-line react/prop-types
-export const Comment = ({comment, marginLeft, id, setReplyCommentId}) => {
+import {format} from "date-fns";
+import axios from "axios";
+/* eslint-disable react/prop-types */
+export const Comment = ({comment, marginLeft, id, setReplyId, setUserNameReplyTo}) => {
+
 
     const handleReplyClick = () => {
-        setReplyCommentId(id);
+        setReplyId(id);
+        axios.get(`http://127.0.0.1:8000/api/getUserByCommentId/${id}`)
+            .then((response)=>{
+
+                setUserNameReplyTo(response.data);
+            })
+            .catch((error)=>{console.log(error)})
     }
 
     return (
@@ -14,10 +23,10 @@ export const Comment = ({comment, marginLeft, id, setReplyCommentId}) => {
                     <i className="material-icons">account_circle</i>
                 </div>
                 <div className={styles.user__name}>
-                    <span>UserName</span>
+                    <span>{comment.username}</span>
                 </div>
                 <div className={styles.publication__date}>
-                    <span>22.10.23 в 12:33</span>
+                    <span>{format(new Date(comment.created_at), 'yyyy-MM-dd HH:mm')}</span>
                 </div>
                 <div className={styles.comment__functions}>
                     <i className="material-icons" onClick={handleReplyClick}>reply</i>
@@ -25,34 +34,41 @@ export const Comment = ({comment, marginLeft, id, setReplyCommentId}) => {
             </div>
             <div className={styles.comment__content}>
                 <div className={styles.content__file}>
-                    <div>
-                        <TextFileModal link={'https://sometestlarbucket.s3.eu-central-1.amazonaws.com/postPreviews/1.txt'}/>
-                    </div>
-                    {/*<div>*/}
-                    {/*    <a className={styles.popup__image} href="/images/pinned__img.jpg" data-lightbox={id}>*/}
-                    {/*        <img src="/images/pinned__img.jpg" width={'100'} height={'75'} alt="Image"/>*/}
-                    {/*        <i className="material-icons">open_in_new</i>*/}
-                    {/*    </a>*/}
-                    {/*</div>*/}
+
+                    {
+                        comment.file_url !== '' && (
+                            comment.file_url.match(/\.(.{1,4})$/)?.[1] === 'txt' ? (
+                                <div><TextFileModal link={comment.file_url} /></div>
+                            ) : (
+                                <div>
+                                    <a className={styles.popup__image} href={comment.file_url} data-lightbox={id}>
+                                        <img src={comment.file_url} width={'100'} height={'75'} alt="Image" />
+                                        <i className="material-icons">open_in_new</i>
+                                    </a>
+                                </div>
+                            )
+                        )
+                    }
+
+
                 </div>
-                <div className={styles.comment__text}>
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit,
-                    sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-                    Non odio euismod lacinia at quis risus sed vulputate odio.
-                    Mattis nunc sed blandit libero volutpat sed cras ornare arcu.
-                    <br/><code>
-                    Diam phasellus vestibulum lorem sed risus ultricies.
-                    Neque convallis a cras semper auctor neque vitae tempus.
-                    Enim neque volutpat ac tincidunt vitae semper.
-                    Dui ut ornare lectus sit amet. Diam ut venenatis tellus in.
-                </code><br/><br/>
+                <div
+                    className={styles.comment__text}
+
+                    dangerouslySetInnerHTML={{ __html: comment.text_content.replace(/\n/g, '<br />') }}>
                 </div>
 
             </div>
-            <div className="replies">
-                {/* eslint-disable-next-line react/prop-types */}
+            <div className={styles.replies}>
                 {comment.replies.map((reply, index) =>
-                    <Comment key={index} comment={reply} marginLeft={marginLeft + 20} id={reply.id} setReplyCommentId={setReplyCommentId} />
+                    <Comment
+                        key={index}
+                        comment={reply}
+                        marginLeft={marginLeft + 20}
+                        id={reply.id}
+                        setReplyId={setReplyId}
+                        setUserNameReplyTo={setUserNameReplyTo}
+                    />
                 )}
             </div>
         </div>
