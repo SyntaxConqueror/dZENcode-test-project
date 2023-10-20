@@ -1,19 +1,21 @@
 FROM php:8.1-fpm
 
+WORKDIR /var/www/html
+
+COPY ./backend /var/www/html
+
+RUN apt-get update && apt-get install -y \
+    nginx \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN docker-php-ext-install pdo pdo_mysql
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-
-WORKDIR /var/www/html
-
-COPY . .
-
+COPY ./backend/composer.json ./backend/composer.lock /var/www/html/
 RUN composer install
 
-RUN chown -R www-data:www-data /var/www/html/storage
-RUN chown -R www-data:www-data /var/www/html/bootstrap/cache
-
-EXPOSE 9000
+EXPOSE 8000
 
 CMD ["php-fpm"]

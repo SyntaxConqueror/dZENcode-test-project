@@ -22,12 +22,13 @@ body::-webkit-scrollbar-thumb {
 
 
 .container {
-    height: 100%;
+    height: 825px;
     width: 100%;
+    max-width: 900px;
     padding: 2em;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: space-between;
 }
 
 .loading__gif {
@@ -43,14 +44,14 @@ body::-webkit-scrollbar-thumb {
 .react__paginate {
     list-style: none;
     display: flex;
-    gap: 1em;
+    gap: .5em;
     margin-top: 1em;
     justify-content: center;
 }
 
 .react__paginate > li > a {
     cursor: pointer;
-    padding: .5em 1em;
+    padding: .5em .7em;
     user-select: none;
 
 }
@@ -77,6 +78,7 @@ body::-webkit-scrollbar-thumb {
     flex-direction: column;
     gap: 4em;
     overflow-y: auto;
+    height: 100%;
     padding: .5em;
 }
 
@@ -111,6 +113,12 @@ body::-webkit-scrollbar-thumb {
     }
 }
 
+@media screen and (max-width: 1105px) {
+    .container {
+        max-width: none;
+    }
+}
+
 @media screen and (max-width: 920px) {
     .react__paginate {
         gap: .5em;
@@ -128,4 +136,5 @@ body::-webkit-scrollbar-thumb {
         user-select: none;
     }
 }
+
 

@@ -8,8 +8,8 @@ import axios from "axios";
 export const CommentsThread = ({setReplyId, comments, setComments, setUserNameReplyTo}) => {
 
     const [currentPage, setCurrentPage] = useState(1);
-    const [showContent, setShowContent] = useState(false);
 
+    const [currentData, setCurrentData] = useState(null);
     const [paginateData, setPaginateData] = useState({
         itemsPerPage: 25,
         totalItems: 0,
@@ -18,16 +18,21 @@ export const CommentsThread = ({setReplyId, comments, setComments, setUserNameRe
 
     const commentsContainerRef = useRef();
 
-    useEffect(() => {
-        setTimeout(() => {
-            setShowContent(true);
-        }, 500);
-    }, [showContent]);
 
     useEffect(() => {
-        paginateData.totalItems = comments.length;
-        paginateData.totalPages = Math.ceil(comments.length / 25);
-    }, [comments.length, paginateData]);
+
+        const startIndex = (currentPage - 1) * paginateData.itemsPerPage;
+        const endIndex = startIndex + paginateData.itemsPerPage;
+        const data = comments && comments.original ? comments.original : comments;
+
+        const totalItems = data.length;
+        const totalPages = Math.ceil(totalItems / 25);
+
+        paginateData.totalItems = totalItems;
+        paginateData.totalPages = totalPages;
+        setCurrentData(data.slice(startIndex, endIndex));
+
+    }, [comments, currentPage, paginateData]);
 
 
     const handlePageChange = (selectedPage) => {
@@ -41,23 +46,19 @@ export const CommentsThread = ({setReplyId, comments, setComments, setUserNameRe
             'username': 'http://127.0.0.1:8000/api/usernameSort',
             'email': 'http://127.0.0.1:8000/api/emailSort',
         }
-
+        setComments([]);
         axios.get(sortEndpoints[option])
             .then((response)=> {
-                setShowContent(false);
                 setComments(response.data);
             })
             .catch((error)=>{console.log(error)})
     };
 
 
-    const startIndex = (currentPage - 1) * paginateData.itemsPerPage;
-    const endIndex = startIndex + paginateData.itemsPerPage;
-    const currentData = comments.slice(startIndex, endIndex);
 
 
     return (
-        showContent
+        (comments.original || comments.length > 0)
         ?
         <div className={styles.container}>
             <div className={styles.comments__sort}>
@@ -128,9 +129,10 @@ export const CommentsThread = ({setReplyId, comments, setComments, setUserNameRe
 
             </div>
             <div className={styles.comments__container} ref={commentsContainerRef}>
-                {currentData.map((comment) =>
+                {currentData && currentData.map((comment) =>
                     {
                         return <Comment
+                            userReplyTo={null}
                             comment={comment}
                             setReplyId={setReplyId}
                             setUserNameReplyTo={setUserNameReplyTo}
@@ -144,9 +146,9 @@ export const CommentsThread = ({setReplyId, comments, setComments, setUserNameRe
             <div>
                 <ReactPaginate
                     className={styles.react__paginate}
-                    pageCount={paginateData.totalPages}
+                    pageCount={parseInt(paginateData.totalPages)}
                     pageRangeDisplayed={5}
-                    marginPagesDisplayed={2}
+                    marginPagesDisplayed={1}
                     onPageChange={(selected) => {
                         // Scroll to the top of the page
                         if (commentsContainerRef.current) {

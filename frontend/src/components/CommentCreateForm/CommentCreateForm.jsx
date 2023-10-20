@@ -5,7 +5,8 @@ import axios from 'axios';
 import CommentPreview from "./CommentPreview/CommentPreview.jsx";
 import ErrorModal from "../ErrorModal/ErrorModal.jsx";
 /* eslint-disable react/prop-types */
-export const CommentCreateForm = ({replyId, setReplyId, setComments, userNameReplyTo, setUserNameReplyTo}) => {
+
+export const CommentCreateForm = ({replyId, setReplyId, comments, setComments, userNameReplyTo, setUserNameReplyTo}) => {
 
     const [isCaptchaCorrect, setIsCaptchaCorrect] = useState(null);
     const [errorMessage, setErrorMessage] = useState(null);
@@ -16,6 +17,7 @@ export const CommentCreateForm = ({replyId, setReplyId, setComments, userNameRep
 
     const [showReplyElements, setShowReplyElements] = useState(false);
     const [showPreview, setShowPreview] = useState(false);
+    const [isTextEmpty, setIsTextEmpty] = useState(true);
 
     const [comment, setComment] = useState({
         username: null,
@@ -44,11 +46,7 @@ export const CommentCreateForm = ({replyId, setReplyId, setComments, userNameRep
         errorMessage && setShowErrorModal(true);
     }, [errorMessage]);
     useEffect(() => {
-        if (comment.parentId) {
-            setTimeout(() => {
-                setShowReplyElements(true);
-            }, 150);
-        }
+        setShowReplyElements(true);
     }, [comment.parentId]);
 
 
@@ -108,6 +106,8 @@ export const CommentCreateForm = ({replyId, setReplyId, setComments, userNameRep
     */
     const handleSubmit = (e) => {
         e.preventDefault();
+        const commentsReserve = comments;
+
         try {
             const formData = new FormData(e.target);
 
@@ -120,18 +120,24 @@ export const CommentCreateForm = ({replyId, setReplyId, setComments, userNameRep
                 commentData.append('parentId', comment.parentId ?? null);
                 commentData.append('file', comment.file);
 
+                if(isTextEmpty){
+                   setErrorMessage('Your message is empty! Type something.');
+                   return;
+                }
+
+                setComments([]);
+
                 axios.post('http://127.0.0.1:8000/api/createComment', commentData)
                     .then((response)=>{
                         if(response.data.message){
                             setErrorMessage(response.data.message);
-                            return response(response.data);
+                            setComments(commentsReserve);
+                            return;
                         }
                         setComments(response.data);
-                    })
-                    .catch((error) => {
-                        console.error(error);
                     });
                 handleReload();
+                setContentInputValue('');
             }
         } catch (err) {
             console.log(err);
@@ -158,14 +164,17 @@ export const CommentCreateForm = ({replyId, setReplyId, setComments, userNameRep
         commentPreviewData.append('file_type', comment.file && comment.file.type);
         commentPreviewData.append('created_at', date.toString());
 
+        if(isTextEmpty){
+            setErrorMessage('Your message is empty! Type something.');
+            return;
+        }
 
         axios.post('http://127.0.0.1:8000/api/createPreviewComment', commentPreviewData)
             .then((response)=>{
                 if(response.data.message){
                     setErrorMessage(response.data.message);
-                    return response.data;
+                    return;
                 }
-                console.log(response.data);
                 setPreviewComment(response.data);
                 setShowPreview(true);
             })
@@ -309,10 +318,7 @@ export const CommentCreateForm = ({replyId, setReplyId, setComments, userNameRep
                     const allowedTags = ['a', 'i', 'strong', 'code'];
 
                     if (allowedTags.includes(tagName)) {
-                        const newNode = document.createElement(tagName);
                         node.childNodes.forEach(checkClosingTags);
-                        newNode.innerHTML = node.innerHTML;
-                        node.replaceWith(newNode);
                     }
                 }
             }
@@ -320,6 +326,10 @@ export const CommentCreateForm = ({replyId, setReplyId, setComments, userNameRep
             doc.body.childNodes.forEach(checkClosingTags);
             return doc.body.innerHTML;
         }
+
+        const text = e.target.value.replace(/<[^>]*>/g, '');
+        setIsTextEmpty(!text.trim());
+
 
         const sanitizedValue = sanitizeInput(inputValue);
         setContentInputValue(sanitizedValue);
@@ -372,7 +382,7 @@ export const CommentCreateForm = ({replyId, setReplyId, setComments, userNameRep
                             className={styles.form__content__field}
                             ref={contentInputRef}
                             value={contentInputValue}
-                            maxLength="2000"
+                            maxLength="1000"
                             onChange={handleContentInputChange}
                         ></textarea>
                     </div>
@@ -445,7 +455,13 @@ export const CommentCreateForm = ({replyId, setReplyId, setComments, userNameRep
                     <button type="submit" className={styles.submit__btn}>Send comment</button>
                 </div>
             </form>
-            {showPreview && <CommentPreview show={showPreview} setShowPreview={setShowPreview} commentData={previewComment}/>}
+            {
+                showPreview
+                &&
+                <CommentPreview
+                    show={showPreview}
+                    setShowPreview={setShowPreview}
+                    commentData={previewComment}/>}
             {
                 showErrorModal
                 &&

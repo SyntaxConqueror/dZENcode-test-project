@@ -7,10 +7,12 @@ use App\Models\User;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 
 class CommentsController extends Controller
 {
+    private int $cacheMinutes = 120;
 
     /*
      *
@@ -39,6 +41,7 @@ class CommentsController extends Controller
     private function getOrCreateUser ($username, $email, $homepage_url) {
 
         try {
+
             $user = User::where('email', $email)->first();
 
             if(!$user) {
@@ -53,23 +56,11 @@ class CommentsController extends Controller
                 return $user;
             }
 
+            $user->update(['username'=>$username]);
             return $user;
         }
         catch (Exception $error){
             return null;
-        }
-
-    }
-    public function getUserByCommentId ($id): JsonResponse
-    {
-        try {
-            return \response()->json(Comment::find($id)->user->username);
-        }
-        catch (Exception $error){
-            return \response()->json([
-               'statusCode' => $error->getCode(),
-               'message' => $error->getMessage()
-            ]);
         }
 
     }
@@ -81,6 +72,7 @@ class CommentsController extends Controller
      * */
     private function createCommentFromRequest ($user_id, $text_content, $parentId, $file) {
         try {
+
             $commentData = [
                 'user_id' => $user_id,
                 'text_content' => $text_content,
@@ -88,6 +80,7 @@ class CommentsController extends Controller
                 'file_url' => $this->putFileToBucket($file),
             ];
 
+            Cache::flush();
             return Comment::create($commentData);
         }
         catch (Exception $error){
@@ -125,6 +118,7 @@ class CommentsController extends Controller
 
     /*
      *
+     * Cache provided
      * Sorting comments by:
      * Date - Ascending
      * Date - Descending
@@ -135,8 +129,13 @@ class CommentsController extends Controller
     public function dateAscendingSort (): ?JsonResponse
     {
         try {
-            $comments = Comment::orderBy('created_at', 'asc')->get();
-            $nestedObjects = $this->buildNestedStructure($comments);
+            $cacheKey = 'dateAscendingSort';
+
+            $nestedObjects = Cache::remember($cacheKey, $this->cacheMinutes, function () {
+                $comments = Comment::orderBy('created_at', 'asc')->get();
+                return $this->buildNestedStructure($comments);
+            });
+
             return response()->json($nestedObjects);
         }
         catch (Exception $error) { return null; }
@@ -145,8 +144,14 @@ class CommentsController extends Controller
     public function dateDescendingSort (): ?JsonResponse
     {
         try {
-            $comments = Comment::orderBy('created_at', 'desc')->get();
-            $nestedObjects = $this->buildNestedStructure($comments);
+
+            $cacheKey = 'dateDescendingSort';
+
+            $nestedObjects = Cache::remember($cacheKey, $this->cacheMinutes, function () {
+                $comments = Comment::orderBy('created_at', 'desc')->get();
+                return $this->buildNestedStructure($comments);
+            });
+
             return response()->json($nestedObjects);
         }
         catch (Exception $error) { return null; }
@@ -155,12 +160,16 @@ class CommentsController extends Controller
     public function usernameSort (): ?JsonResponse
     {
         try {
-            $comments = Comment::select('comments.*')
-                ->join('users', 'comments.user_id', '=', 'users.id')
-                ->orderBy('users.username', 'asc')
-                ->get();
+            $cacheKey = 'usernameSort';
 
-            $nestedObjects = $this->buildNestedStructure($comments);
+            $nestedObjects = Cache::remember($cacheKey, $this->cacheMinutes, function () {
+                $comments = Comment::select('comments.*')
+                    ->join('users', 'comments.user_id', '=', 'users.id')
+                    ->orderBy('users.username', 'asc')
+                    ->get();
+                return $this->buildNestedStructure($comments);
+            });
+
             return response()->json($nestedObjects);
         }
         catch (Exception $error) { return null; }
@@ -169,11 +178,16 @@ class CommentsController extends Controller
     public function emailSort (): ?JsonResponse
     {
         try {
-            $comments = Comment::select('comments.*')
-                ->join('users', 'comments.user_id', '=', 'users.id')
-                ->orderBy('users.email', 'asc')
-                ->get();
-            $nestedObjects = $this->buildNestedStructure($comments);
+            $cacheKey = 'emailSort';
+
+            $nestedObjects = Cache::remember($cacheKey, $this->cacheMinutes, function () {
+                $comments = Comment::select('comments.*')
+                    ->join('users', 'comments.user_id', '=', 'users.id')
+                    ->orderBy('users.email', 'asc')
+                    ->get();
+                return $this->buildNestedStructure($comments);
+            });
+
             return response()->json($nestedObjects);
         }
         catch (Exception $error) {
@@ -184,15 +198,22 @@ class CommentsController extends Controller
 
     /*
      *
+     * Cache provided
      * Method to get all comments and return them
      *
      * */
     public function getComments(): ?JsonResponse
     {
         try {
-            $comments = Comment::all()->reverse();
-            $nestedObjects = $this->buildNestedStructure($comments);
+            $cacheKey = 'comments';
+
+            $nestedObjects = Cache::remember($cacheKey, $this->cacheMinutes, function () {
+                $comments = Comment::all()->reverse();
+                return $this->buildNestedStructure($comments);
+            });
+
             return response()->json($nestedObjects);
+
         }
         catch (Exception $error){
             return null;
@@ -215,10 +236,13 @@ class CommentsController extends Controller
                 'username' => 'required|string|min:3|max:25',
                 'email'=>'required|email',
                 'homepageURL'=> 'nullable|url',
-                'text_content' => 'required|string|max:2000',
+                'text_content' => 'required|string|max:1000',
                 'parentId' => 'nullable',
                 'file' => 'nullable'
             ]);
+
+            if(trim(strip_tags($request->text_content)) === '')
+                throw new Exception("Your message is empty! Type something.");
 
             // Getting or creating user
             $user = $this->getOrCreateUser(
@@ -254,6 +278,12 @@ class CommentsController extends Controller
             return response()->json($response);
         }
     }
+
+    /*
+     *
+     * Method to create and return preview comment data
+     *
+     * */
     public function createPreviewComment(Request $request): JsonResponse
     {
         try {
@@ -282,4 +312,5 @@ class CommentsController extends Controller
         }
 
     }
+
 }

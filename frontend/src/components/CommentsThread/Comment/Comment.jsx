@@ -1,23 +1,34 @@
 import styles from './styles.module.css';
 import TextFileModal from "./TextFileModal/TextFileModal.jsx";
 import {format} from "date-fns";
-import axios from "axios";
+import {useEffect, useRef, useState} from "react";
 /* eslint-disable react/prop-types */
-export const Comment = ({comment, marginLeft, id, setReplyId, setUserNameReplyTo}) => {
+export const Comment = ({comment, marginLeft, id, setReplyId, setUserNameReplyTo, userReplyTo}) => {
 
+    const [marginVariable, setMarginVariable] = useState(20);
+    const commentContainer = useRef(null);
 
     const handleReplyClick = () => {
         setReplyId(id);
-        axios.get(`http://127.0.0.1:8000/api/getUserByCommentId/${id}`)
-            .then((response)=>{
-
-                setUserNameReplyTo(response.data);
-            })
-            .catch((error)=>{console.log(error)})
+        setUserNameReplyTo(comment.username);
     }
 
+    useEffect(()=>{
+        if (marginLeft > 0) {
+            setMarginVariable(0);
+        }
+
+    }, [marginLeft])
+
+    useEffect(() => {
+        if(userReplyTo) {
+            commentContainer.current.classList.add('reply');
+        }
+    }, [userReplyTo]);
+
+
     return (
-        <div className={styles.comment__container} style={{ marginLeft: `${marginLeft}px` }}>
+        <div className={styles.comment__container} ref={commentContainer} style={{ marginLeft: `${marginLeft}px` }}>
             <div className={styles.comment__header}>
                 <div className={styles.user__avatar}>
                     <i className="material-icons">account_circle</i>
@@ -33,12 +44,15 @@ export const Comment = ({comment, marginLeft, id, setReplyId, setUserNameReplyTo
                 </div>
             </div>
             <div className={styles.comment__content}>
+                {userReplyTo && <div style={{fontSize: '.8em'}}>Reply to: {userReplyTo}</div>}
                 <div className={styles.content__file}>
 
                     {
                         comment.file_url !== '' && (
                             comment.file_url.match(/\.(.{1,4})$/)?.[1] === 'txt' ? (
-                                <div><TextFileModal link={comment.file_url} /></div>
+                                <div>
+                                    <TextFileModal link={comment.file_url} />
+                                </div>
                             ) : (
                                 <div>
                                     <a className={styles.popup__image} href={comment.file_url} data-lightbox={id}>
@@ -63,8 +77,9 @@ export const Comment = ({comment, marginLeft, id, setReplyId, setUserNameReplyTo
                 {comment.replies.map((reply, index) =>
                     <Comment
                         key={index}
+                        userReplyTo={comment.username}
                         comment={reply}
-                        marginLeft={marginLeft + 20}
+                        marginLeft={marginLeft + marginVariable}
                         id={reply.id}
                         setReplyId={setReplyId}
                         setUserNameReplyTo={setUserNameReplyTo}

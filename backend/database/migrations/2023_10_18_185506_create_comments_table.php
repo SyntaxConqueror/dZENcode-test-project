@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('comments', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id');
-            $table->string('text_content', 2000);
+            $table->string('text_content', 1000);
             $table->unsignedBigInteger('parent_id')->nullable();
             $table->string('file_url')->nullable();
             $table->timestamps();

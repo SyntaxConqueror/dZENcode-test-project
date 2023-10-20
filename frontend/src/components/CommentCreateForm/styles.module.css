@@ -2,7 +2,8 @@
 
 .container {
     height: 100%;
-    width: 80%;
+    width: 100%;
+
     padding: 2em;
     display: flex;
     flex-direction: column;
@@ -276,6 +277,22 @@ input[type="file"] {
 .captcha__img > div > div {
     display: flex;
     align-items: center;
+}
+
+@media screen and (max-width: 1425px) {
+    .form__content__group {
+        flex-direction: column;
+    }
+
+    .form__content__buttons {
+        flex-direction: row;
+        gap: 1em;
+        padding: 1.25em 0 0 0;
+    }
+    .form__content__buttons > * {
+        width: 100%;
+    }
+
 }
 
 @media screen and (max-width: 850px) {

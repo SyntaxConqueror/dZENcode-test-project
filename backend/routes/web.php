@@ -20,14 +20,13 @@ Route::group([
 
     /*
      *
-     * Route group for Comments get endpoints
+     * Route group for Comments and Users get endpoints
      *
      * */
 Route::group([
     'prefix' => 'api'
 ], function () {
     Route::get('/getComments', [CommentsController::class, 'getComments']);
-    Route::get('/getUserByCommentId/{id}', [CommentsController::class, 'getUserByCommentId']);
 });
 
 
