@@ -16,7 +16,7 @@ class UsersCommentsSeeder extends Seeder
      */
     public function run(): void
     {
-        $filesStorage = Storage::disk('s3')->allFiles();
+        $filesStorage = Storage::disk('s3')->allFiles("files/");
 
         for ($i = 0; $i < 50; $i++ ) {
             $user = User::create([
