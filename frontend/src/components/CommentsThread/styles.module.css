@@ -1,0 +1,140 @@
+a {
+    text-decoration: none !important;
+    color: black !important;
+}
+
+a[class='btn btn-secondary dropdown-toggle'] {
+    color: white !important;
+}
+
+body::-webkit-scrollbar {
+    width: 6px;
+}
+
+body::-webkit-scrollbar-track {
+    background: rgba(128, 128, 128, .1);
+}
+
+body::-webkit-scrollbar-thumb {
+    background-color: rgba(128, 128, 128, 1);
+    border-radius: 20px;
+}
+
+
+.container {
+    height: 825px;
+    width: 100%;
+    max-width: 900px;
+    padding: 2em;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.loading__gif {
+    height: 100%;
+    width: 100%;
+    padding: 2em;
+    display: flex;
+    gap: 1em;
+    justify-content: center;
+    align-items: center;
+}
+
+.react__paginate {
+    list-style: none;
+    display: flex;
+    gap: .5em;
+    margin-top: 1em;
+    justify-content: center;
+}
+
+.react__paginate > li > a {
+    cursor: pointer;
+    padding: .5em .7em;
+    user-select: none;
+
+}
+
+.react__paginate > li > a:hover {
+    background: rgba(213, 213, 231, 0.6);
+    box-shadow: rgba(45, 35, 66, 0.4) 0 2px 4px,
+    rgba(45, 35, 66, 0.3) 0 7px 13px -3px,
+    #D6D6E7 0 -3px 0 inset;
+    transition: .2s;
+}
+
+.react__paginate > li[class='selected'] > a {
+    color: cornflowerblue;
+    transition: .2s;
+    box-shadow: rgba(45, 35, 66, 0.4) 0 2px 4px,
+    rgba(45, 35, 66, 0.3) 0 7px 13px -3px,
+    #D6D6E7 0 -3px 0 inset;
+    border-radius: 50%;
+}
+
+.comments__container {
+    display: flex;
+    flex-direction: column;
+    gap: 4em;
+    overflow-y: auto;
+    height: 100%;
+    padding: .5em;
+}
+
+.comments__container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.comments__container::-webkit-scrollbar-track {
+    background: rgba(128, 128, 128, .1);
+}
+
+.comments__container::-webkit-scrollbar-thumb {
+    background-color: rgba(128, 128, 128, .4);
+    border-radius: 20px;
+}
+
+
+.comments__sort {
+    display: flex;
+    flex-direction: row-reverse;
+    width: 100%;
+    padding: .3em;
+    background: rgba(128, 128, 128, .1);
+}
+
+@media screen and (max-width: 1110px) {
+    .react__paginate > li[class='previous'],
+    .react__paginate > li[class='next'],
+    .react__paginate > li[class='next disabled'],
+    .react__paginate > li[class='previous disabled']{
+        display: none;
+    }
+}
+
+@media screen and (max-width: 1105px) {
+    .container {
+        max-width: none;
+    }
+}
+
+@media screen and (max-width: 920px) {
+    .react__paginate {
+        gap: .5em;
+    }
+}
+
+
+@media screen and (max-width: 400px) {
+    .react__paginate {
+        gap: .5em;
+    }
+    .react__paginate > li > a {
+        cursor: pointer;
+        padding: .3em .6em;
+        user-select: none;
+    }
+}
+
+
