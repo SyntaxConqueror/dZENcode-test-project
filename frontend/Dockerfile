@@ -1,9 +1,9 @@
 FROM node:16.15.1-alpine
 
 WORKDIR /app
-COPY ./frontend/package.json .
+COPY package.json .
 
-RUN npm install
-COPY ./frontend .
+RUN npm i
+COPY . .
 
 CMD ["npm", "run", "dev"]

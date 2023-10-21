@@ -18,7 +18,7 @@ class UsersCommentsSeeder extends Seeder
     {
         $filesStorage = Storage::disk('s3')->allFiles();
 
-        for ($i = 0; $i < 200; $i++ ) {
+        for ($i = 0; $i < 50; $i++ ) {
             $user = User::create([
                 'username' => fake()->firstName(),
                 'email' => fake()->unique()->safeEmail(),
@@ -30,7 +30,7 @@ class UsersCommentsSeeder extends Seeder
                 $comment = Comment::create([
                     'user_id' => $user->id,
                     'text_content' => fake()->text(350),
-                    'parent_id' => fake()->optional(0.5)->randomNumber(3),
+                    'parent_id' => fake()->optional(0.5)->randomNumber(2),
                     'file_url' => Storage::disk('s3')->url(str_replace("files/", "", $fileUrl)),
                 ]);
 

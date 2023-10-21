@@ -313,4 +313,8 @@ class CommentsController extends Controller
 
     }
 
+    public function test() {
+        return response()->json(Comment::all());
+    }
+
 }

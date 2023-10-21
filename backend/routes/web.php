@@ -27,6 +27,7 @@ Route::group([
     'prefix' => 'api'
 ], function () {
     Route::get('/getComments', [CommentsController::class, 'getComments']);
+    Route::get('/test', [CommentsController::class, 'test']);
 });
 
 
