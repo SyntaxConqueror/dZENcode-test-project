@@ -75,6 +75,10 @@ AWS_USE_PATH_STYLE_ENDPOINT=false
 ```
 Than you should run:
 ```sh
+php artisan migrate
+
+php artisan db:seed --class=UsersCommentsSeeder
+
 php artisan serve
 ```
 
