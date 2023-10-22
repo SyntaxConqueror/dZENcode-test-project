@@ -1,0 +1,21 @@
+.open__btn {
+    position: relative;
+    cursor: pointer;
+}
+
+.open__btn img {
+    display: block;
+    width: 85px;
+    height: 85px;
+}
+
+.open__btn i {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+}
+
+.open__btn:hover > i {
+    color: rgb(71, 110, 210) !important;
+    transition: .2s;
+}

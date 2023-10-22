@@ -1,0 +1,49 @@
+version: '3.7'
+services:
+
+  mysql:
+    image: mysql:latest
+    container_name: mysql
+    platform: linux/x86_64
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-volumes:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: dzencodedb
+
+  laravel-app:
+    build:
+      context: ./docker/php
+    container_name: laravel-app
+    volumes:
+      - ./backend/:/home/source/main
+    working_dir: /home/source/main
+
+  nginx:
+    build:
+      context: ./docker/nginx
+    container_name: todo-nginx
+    ports:
+      - "8000:80"
+    depends_on:
+      - laravel-app
+    volumes:
+      - ./backend/:/home/source/main
+
+  react-app:
+    build:
+      context: ./frontend
+    container_name: react-app
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend/:/react-app
+
+volumes:
+  mysql-volumes:
+
+networks:
+  default:
+    name: laravel-app-network
