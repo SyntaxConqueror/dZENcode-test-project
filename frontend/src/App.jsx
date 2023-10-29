@@ -33,10 +33,10 @@ function App() {
     useEffect(()=>{
         if(!cacheStatus){
             const sortEndpoints = [
-                'http://127.0.0.1:8000/api/dateDescendingSort',
-                'http://127.0.0.1:8000/api/dateAscendingSort',
-                'http://127.0.0.1:8000/api/usernameSort',
-                'http://127.0.0.1:8000/api/emailSort',
+                'http://127.0.0.1:8000/api/sort/dateDescendingSort',
+                'http://127.0.0.1:8000/api/sort/dateAscendingSort',
+                'http://127.0.0.1:8000/api/sort/usernameSort',
+                'http://127.0.0.1:8000/api/sort/emailSort',
             ]
             sortEndpoints.forEach((item)=>{
                 axios.get(item)

@@ -41,10 +41,10 @@ export const CommentsThread = ({setReplyId, comments, setComments, setUserNameRe
 
     const handleOptionSelect = (option) => {
         const sortEndpoints = {
-            'ascending': 'http://127.0.0.1:8000/api/dateAscendingSort',
-            'descending': 'http://127.0.0.1:8000/api/dateDescendingSort',
-            'username': 'http://127.0.0.1:8000/api/usernameSort',
-            'email': 'http://127.0.0.1:8000/api/emailSort',
+            'ascending': 'http://127.0.0.1:8000/api/sort/dateAscendingSort',
+            'descending': 'http://127.0.0.1:8000/api/sort/dateDescendingSort',
+            'username': 'http://127.0.0.1:8000/api/sort/usernameSort',
+            'email': 'http://127.0.0.1:8000/api/sort/emailSort',
         }
         setComments([]);
         axios.get(sortEndpoints[option])

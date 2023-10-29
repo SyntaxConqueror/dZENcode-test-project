@@ -10,10 +10,8 @@ use Illuminate\Support\Facades\Route;
      * Route group for creating Comments endpoints
      *
      * */
-Route::group([
-    'prefix' => 'api'
-], function (){
-    Route::post('/createComment', [CommentsController::class, 'createComment']);
+Route::group([], function (){
+    Route::post('/createComment', [CommentsController::class, 'createComment'])->middleware('comment.data');
     Route::post('/createPreviewComment', [CommentsController::class, 'createPreviewComment']);
 });
 
@@ -23,11 +21,8 @@ Route::group([
      * Route group for Comments and Users get endpoints
      *
      * */
-Route::group([
-    'prefix' => 'api'
-], function () {
+Route::group([], function () {
     Route::get('/getComments', [CommentsController::class, 'getComments']);
-    Route::get('/test', [CommentsController::class, 'test']);
 });
 
 
@@ -36,11 +31,6 @@ Route::group([
      * Route group for Sort endpoints
      *
      * */
-Route::group([
-    'prefix' => 'api'
-], function () {
-    Route::get('/dateAscendingSort', [CommentsController::class, 'dateAscendingSort']);
-    Route::get('/dateDescendingSort', [CommentsController::class, 'dateDescendingSort']);
-    Route::get('/usernameSort', [CommentsController::class, 'usernameSort']);
-    Route::get('/emailSort', [CommentsController::class, 'emailSort']);
+Route::group([], function () {
+    Route::get('/sort/{type}', [CommentsController::class, 'sort']);
 });
