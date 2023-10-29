@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreCommentRequest;
 use App\Models\Comment;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class CommentsController extends Controller
 {
@@ -17,7 +20,7 @@ class CommentsController extends Controller
      * Method to put file to Amazon AWS s3 Bucket
      *
      * */
-    public function putFileToBucket ($file): string
+    private function putFileToBucket ($file): string
     {
         if(!$file) return '';
 
@@ -27,6 +30,21 @@ class CommentsController extends Controller
         return Storage::disk('s3')->url($fileName);
     }
 
+    /*
+     *
+     * Method to create Comment from request data
+     *
+     * */
+    public function pushComment ($user_id, $text_content, $parentId, $file) {
+        $commentData = [
+            'text_content' => $text_content,
+            'parent_id' => $parentId != "null" ? intval($parentId) : null,
+            'file_url' => $this->putFileToBucket($file),
+        ];
+
+        Cache::flush();
+        return User::find($user_id)->comments()->create($commentData);
+    }
 
     /*
      *
@@ -53,15 +71,16 @@ class CommentsController extends Controller
     /*
      *
      * Cache provided
-     * Sorting comments by: date, username, email
+     * Method to get all sorted
+     * or unsorted comments and return them
      *
      * */
-    public function sort ($type): ?JsonResponse
+    public function getComments($sortType = ""): ?JsonResponse
     {
-        $cacheKey = $type;
+        $cacheKey = $sortType;
 
-        $nestedObjects = Cache::remember($cacheKey, $this->cacheMinutes, function () use ($type) {
-            $comments = match ($type) {
+        $nestedObjects = Cache::remember($cacheKey, $this->cacheMinutes, function () use ($sortType) {
+            $comments = match ($sortType) {
                 'dateAscendingSort' => Comment::orderBy('created_at', 'asc')->get(),
                 'dateDescendingSort' => Comment::orderBy('created_at', 'desc')->get(),
                 'usernameSort' => Comment::select('comments.*')
@@ -72,28 +91,9 @@ class CommentsController extends Controller
                     ->join('users', 'comments.user_id', '=', 'users.id')
                     ->orderBy('users.email', 'asc')
                     ->get(),
-                default => Comment::orderBy('created_at', 'asc')->get(),
+                default => Comment::all()->reverse(),
             };
 
-            return $this->buildNestedStructure($comments);
-        });
-
-        return response()->json($nestedObjects);
-    }
-
-
-    /*
-     *
-     * Cache provided
-     * Method to get all comments and return them
-     *
-     * */
-    public function getComments(): ?JsonResponse
-    {
-        $cacheKey = 'comments';
-
-        $nestedObjects = Cache::remember($cacheKey, $this->cacheMinutes, function () {
-            $comments = Comment::all()->reverse();
             return $this->buildNestedStructure($comments);
         });
 
@@ -106,8 +106,13 @@ class CommentsController extends Controller
      * Method to create and return all comments
      *
      * */
-    public function createComment(Request $request): JsonResponse
+    public function createComment(StoreCommentRequest $request)
     {
+        // Validate the request
+        $validator = Validator::make($request->all(), $request->rules());
+        if ($validator->fails())
+            return redirect('/')->withErrors($validator->errors())->withInput();
+
         // Getting or creating user
         $user = (new UserController)->createUser(
             $request->username,
@@ -115,11 +120,7 @@ class CommentsController extends Controller
             $request->homepageURL);
 
         // Creating comment
-        (new Comment)->pushComment(
-            $user->id,
-            $request->text_content,
-            $request->parentId,
-            $request->file('file'));
+        $this->pushComment($user->id, $request->text_content, $request->parentId, $request->file('file'));
 
         // Build a nested structure array
         $comments = $this->getComments();

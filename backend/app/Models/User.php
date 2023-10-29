@@ -19,6 +19,6 @@ class User extends Authenticatable
     ];
 
     public function comments() {
-        return $this->belongsToMany(Comment::class)->withTimestamps();
+        return $this->hasMany(Comment::class);
     }
 }

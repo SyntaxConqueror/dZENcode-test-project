@@ -11,26 +11,17 @@ use Illuminate\Support\Facades\Route;
      *
      * */
 Route::group([], function (){
-    Route::post('/createComment', [CommentsController::class, 'createComment'])->middleware('comment.data');
+    Route::post('/createComment', [CommentsController::class, 'createComment']);
     Route::post('/createPreviewComment', [CommentsController::class, 'createPreviewComment']);
 });
 
 
     /*
      *
-     * Route group for Comments and Users get endpoints
+     * Route group for sort and get Comments endpoints
      *
      * */
 Route::group([], function () {
-    Route::get('/getComments', [CommentsController::class, 'getComments']);
+    Route::get('/getComments/{sortType?}', [CommentsController::class, 'getComments']);
 });
 
-
-    /*
-     *
-     * Route group for Sort endpoints
-     *
-     * */
-Route::group([], function () {
-    Route::get('/sort/{type}', [CommentsController::class, 'sort']);
-});
